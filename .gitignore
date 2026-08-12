@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+.DS_Store
+*.log
+
+# Env — keep examples only
+.env
+.env.*
+!.env.example
+*.local
+
+*.pem
+*.key
+credentials.json
+.vercel

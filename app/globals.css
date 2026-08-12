@@ -1,0 +1,530 @@
+@import "tailwindcss";
+
+:root {
+  /* Matched to https://www.bluetopvilla.com/ design tokens */
+  --gold: 40 70% 50%;
+  --gold-light: 40 70% 65%;
+  --gold-dark: 40 70% 38%;
+  --navy: 215 60% 22%;
+  --navy-dark: 215 70% 12%;
+  --navy-light: 215 50% 35%;
+
+  --brand-navy: hsl(var(--navy));
+  --brand-navy-deep: hsl(var(--navy-dark));
+  --brand-slate: #1e293b;
+  --brand-gold: hsl(var(--gold));
+  --brand-gold-bright: hsl(var(--gold-light));
+  --brand-cyan: #06b6d4;
+  --brand-blue: #3b82f6;
+  --ink: #111111;
+  --page-bg: #020617;
+  --muted: #94a3b8;
+  --font-sans: var(--font-inter), Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Matches bluetopvilla.com logo / headings (Playfair Display) */
+  --font-display: var(--font-playfair), "Playfair Display", Georgia, "Times New Roman", serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --radius: 0.75rem;
+
+  /* Dashboard (VCMS) — cool neutral SaaS surface, brand navy/gold accents */
+  --dash-bg: #f4f6f8;
+  --dash-sidebar: #ffffff;
+  --dash-surface: #ffffff;
+  --dash-surface-2: #eef1f4;
+  --dash-border: #e4e7ec;
+  --dash-border-strong: #d0d5dd;
+  --dash-ink: #101828;
+  --dash-ink-soft: #344054;
+  --dash-muted: #4b5565;
+  --dash-navy: hsl(var(--navy-dark));
+  --dash-accent: hsl(var(--navy));
+  --dash-accent-soft: hsl(215 50% 94%);
+  --dash-gold: hsl(var(--gold));
+  --dash-nav-active: #eef2f6;
+  --dash-shadow-md: 0 8px 24px rgb(16 24 40 / 0.06);
+  --dash-focus: hsl(var(--navy));
+}
+
+/* Site-matched CTA buttons (bluetopvilla.com .btn-gold / .btn-outline-light) */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background-color: hsl(var(--gold));
+  padding: 0.75rem 2rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: hsl(var(--navy-dark));
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-gold:hover {
+  background-color: hsl(var(--gold-light));
+  box-shadow: 0 8px 30px hsl(var(--gold) / 0.3);
+}
+
+.btn-gold:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.btn-outline-light {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background-color: transparent;
+  padding: 0.75rem 2rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #fff;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  min-height: 100dvh;
+  font-family: var(--font-sans);
+  background: var(--dash-bg);
+  color: var(--dash-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Inherit ink by default, but never let this beat explicit CTA button colors.
+   (Tailwind utilities live in @layer and lose to unlayered `a` rules.) */
+a:not([class*='dash-btn']) {
+  color: inherit;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Guest promo surface — isolated from dashboard */
+.promo-shell {
+  min-height: 100%;
+  min-height: 100dvh;
+  background: var(--page-bg);
+  color: #fff;
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
+}
+
+.promo-shell a {
+  color: inherit;
+}
+
+.promo-stage {
+  background:
+    radial-gradient(ellipse 70% 55% at 18% 12%, rgba(59, 130, 246, 0.22), transparent 55%),
+    radial-gradient(ellipse 55% 45% at 90% 85%, rgba(6, 182, 212, 0.18), transparent 50%),
+    linear-gradient(165deg, #020617 0%, #0f172a 48%, #020617 100%);
+}
+
+/* Dashboard primitives */
+.dashboard-shell {
+  color: var(--dash-ink);
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+.dashboard-shell main,
+.dash-main {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.dash-skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  transform: translateY(-160%);
+  border-radius: 0.5rem;
+  background: var(--dash-navy);
+  color: #fff;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 120ms ease;
+}
+
+.dash-skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.dashboard-shell :where(a, button, input, select, textarea, summary, [role='button'], [role='menuitem']):focus-visible {
+  outline: 2px solid var(--dash-focus);
+  outline-offset: 2px;
+}
+
+.dashboard-shell :where(a, button, input, select, textarea, summary, [role='button'], [role='menuitem']):focus:not(:focus-visible) {
+  outline: none;
+}
+
+.dash-panel {
+  border: 1px solid var(--dash-border);
+  border-radius: 12px;
+  background: var(--dash-surface);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.04);
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  .dash-panel {
+    border-radius: 10px;
+  }
+}
+
+/* Dashboard CTAs — unlayered so contrast beats `a { color: inherit }` and Tailwind layers */
+.dash-btn,
+.dash-btn-primary,
+.dash-btn-secondary,
+.dash-btn-ghost,
+.dash-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 120ms ease;
+}
+
+.dash-btn:focus-visible,
+.dash-btn-primary:focus-visible,
+.dash-btn-secondary:focus-visible,
+.dash-btn-ghost:focus-visible,
+.dash-btn-danger:focus-visible {
+  outline: 2px solid var(--dash-focus);
+  outline-offset: 2px;
+}
+
+/* Default size for legacy `.dash-btn-primary` call sites without a size class */
+.dash-btn-primary,
+.dash-btn-secondary {
+  height: 2.25rem;
+  padding: 0 0.95rem;
+}
+
+/* Size utilities last so they win over the defaults above */
+.dash-btn-sm {
+  height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+}
+
+.dash-btn-md {
+  height: 2.25rem;
+  padding: 0 0.95rem;
+}
+
+.dash-btn-lg {
+  height: 2.5rem;
+  padding: 0 1.1rem;
+  font-size: 0.875rem;
+}
+
+.dash-btn-primary {
+  border: 1px solid transparent;
+  background: var(--dash-navy);
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgb(16 24 40 / 0.12);
+}
+
+a.dash-btn-primary,
+button.dash-btn-primary,
+.dash-btn.dash-btn-primary {
+  color: #ffffff;
+}
+
+.dash-btn-primary:hover {
+  background: hsl(var(--navy));
+  color: #ffffff;
+}
+
+.dash-btn-primary:active {
+  background: hsl(var(--navy-dark));
+  color: #ffffff;
+}
+
+.dash-btn-secondary {
+  border: 1px solid var(--dash-border-strong);
+  background: var(--dash-surface);
+  color: var(--dash-ink);
+}
+
+a.dash-btn-secondary,
+button.dash-btn-secondary,
+.dash-btn.dash-btn-secondary {
+  color: var(--dash-ink);
+}
+
+.dash-btn-secondary:hover {
+  background: var(--dash-surface-2);
+  border-color: var(--dash-border-strong);
+  color: var(--dash-ink);
+}
+
+.dash-btn-ghost {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dash-ink-soft);
+}
+
+a.dash-btn-ghost,
+button.dash-btn-ghost,
+.dash-btn.dash-btn-ghost {
+  color: var(--dash-ink-soft);
+}
+
+.dash-btn-ghost:hover {
+  background: var(--dash-surface-2);
+  color: var(--dash-ink);
+}
+
+.dash-btn-danger {
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+a.dash-btn-danger,
+button.dash-btn-danger,
+.dash-btn.dash-btn-danger {
+  color: #be123c;
+}
+
+.dash-btn-danger:hover {
+  background: #ffe4e6;
+  color: #9f1239;
+}
+
+.dash-btn:disabled,
+.dash-btn-primary:disabled,
+.dash-btn-secondary:disabled,
+.dash-btn-ghost:disabled,
+.dash-btn-danger:disabled,
+a.dash-btn[aria-disabled='true'] {
+  opacity: 0.4;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* Mobile-only safe areas (desktop uses normal page layout) */
+.app-safe-top {
+  padding-top: max(0.65rem, env(safe-area-inset-top));
+}
+
+.app-safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* ── Touch / selection guards ── */
+
+.scratch-surface,
+.scratch-surface * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-press {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    transform 120ms ease,
+    filter 120ms ease,
+    background-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.app-press:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* ── Ticket foil ── */
+
+.gold-foil {
+  background: linear-gradient(
+    135deg,
+    #8a6a12 0%,
+    #c9a227 12%,
+    #f7e7a1 28%,
+    #d4af37 42%,
+    #fff3b0 52%,
+    #b8860b 68%,
+    #f0d56a 82%,
+    #9a7410 100%
+  );
+  background-size: 220% 220%;
+}
+
+.ticket-mask {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 460' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M24 8c6-6 12-8 20-8h232c8 0 14 2 20 8 4 4 8 10 8 18v20c0 0-14 6-14 20s14 20 14 20v24c0 0-14 6-14 20s14 20 14 20v24c0 0-14 6-14 20s14 20 14 20v24c0 0-14 6-14 20s14 20 14 20v24c0 0-14 6-14 20s14 20 14 20v24c0 0-14 6-14 20s14 20 14 20v18c0 8-4 14-8 18-6 6-12 8-20 8H44c-8 0-14-2-20-8-4-4-8-10-8-18v-18c0 0 14-6 14-20s-14-20-14-20v-24c0 0 14-6 14-20s-14-20-14-20v-24c0 0 14-6 14-20s-14-20-14-20v-24c0 0 14-6 14-20s-14-20-14-20v-24c0 0 14-6 14-20s-14-20-14-20v-24c0 0 14-6 14-20s-14-20-14-20V26c0-8 4-14 8-18z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 460' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M24 8c6-6 12-8 20-8h232c8 0 14 2 20 8 4 4 8 10 8 18v20c0 0-14 6-14 20s14 20 14 20v24c0 0-14 6-14 20s14 20 14 20v24c0 0-14 6-14 20s14 20 14 20v24c0 0-14 6-14 20s14 20 14 20v24c0 0-14 6-14 20s14 20 14 20v24c0 0-14 6-14 20s14 20 14 20v18c0 8-4 14-8 18-6 6-12 8-20 8H44c-8 0-14-2-20-8-4-4-8-10-8-18v-18c0 0 14-6 14-20s-14-20-14-20v-24c0 0 14-6 14-20s-14-20-14-20v-24c0 0 14-6 14-20s-14-20-14-20v-24c0 0 14-6 14-20s-14-20-14-20v-24c0 0 14-6 14-20s-14-20-14-20v-24c0 0 14-6 14-20s-14-20-14-20V26c0-8 4-14 8-18z'/%3E%3C/svg%3E");
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+@keyframes foil-shimmer {
+  0% {
+    background-position: 0% 40%;
+  }
+  50% {
+    background-position: 100% 60%;
+  }
+  100% {
+    background-position: 0% 40%;
+  }
+}
+
+.foil-animate {
+  animation: foil-shimmer 7s ease-in-out infinite;
+}
+
+@keyframes ticket-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.035);
+  }
+  100% {
+    transform: scale(1.02);
+  }
+}
+
+.ticket-celebrate {
+  animation: ticket-pulse 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes reveal-pop {
+  from {
+    opacity: 0.7;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.reveal-pop {
+  animation: reveal-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.promo-fade {
+  animation: promo-rise 0.7s ease-out both;
+}
+
+.promo-fade-delay {
+  animation: promo-rise 0.85s ease-out 0.12s both;
+}
+
+@keyframes promo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ticket-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(212, 175, 55, 0.12) 0%,
+    rgba(247, 231, 161, 0.28) 45%,
+    rgba(212, 175, 55, 0.12) 100%
+  );
+  background-size: 200% 100%;
+  animation: ticket-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes ticket-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Landing page — subtle entrance only */
+.landing-fade-up {
+  animation: landing-rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-fade-up-delay {
+  animation-delay: 0.12s;
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-preview {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .landing-preview:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 28px 90px rgb(2 6 23 / 0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-fade-up,
+  .landing-fade-up-delay,
+  .landing-preview {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
