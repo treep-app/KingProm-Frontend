@@ -55,7 +55,15 @@ export default function SignupForm() {
     <main className="flex min-h-screen flex-col bg-[var(--dash-bg)] text-[var(--dash-ink)]">
       <LandingAuthRedirect />
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-12 sm:px-6">
-        <Link href="/" className="inline-flex w-fit">
+        <Link
+          href="/"
+          className="mb-6 inline-flex w-fit items-center gap-1.5 text-sm font-medium text-[var(--dash-muted)] transition hover:text-[var(--dash-ink)]"
+        >
+          <span aria-hidden>←</span>
+          Back to home
+        </Link>
+
+        <Link href="/" className="inline-flex w-fit" aria-label={`${PLATFORM.name} home`}>
           <BrandLogo size="md" branding={PLATFORM.branding} variant="light" />
         </Link>
 

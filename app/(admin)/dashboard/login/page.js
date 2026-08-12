@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import BrandLogo from '../../../../components/BrandLogo';
 import { login } from '../../../../lib/api/admin';
@@ -45,13 +46,23 @@ function LoginForm() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--dash-bg)] px-4">
       <div className="w-full max-w-md">
+        <Link
+          href="/"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--dash-muted)] transition hover:text-[var(--dash-ink)]"
+        >
+          <span aria-hidden>←</span>
+          Back to home
+        </Link>
+
         <div className="mb-8 text-center">
-          <BrandLogo
-            size="md"
-            variant="light"
-            branding={PLATFORM.branding}
-            className="!text-[1.75rem]"
-          />
+          <Link href="/" className="inline-flex" aria-label={`${PLATFORM.name} home`}>
+            <BrandLogo
+              size="md"
+              variant="light"
+              branding={PLATFORM.branding}
+              className="!text-[1.75rem]"
+            />
+          </Link>
           <p className="mt-3 text-sm text-[var(--dash-muted)]">
             Welcome back to {PLATFORM.name}
           </p>

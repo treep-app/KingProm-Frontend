@@ -6,10 +6,57 @@ import BrandLogo from '../BrandLogo';
 import { PLATFORM } from '../../lib/platform';
 import { NAV_LINKS } from '../../lib/landing/content';
 import { CtaButton } from './LandingPrimitives';
+import { useLandingTheme } from './LandingThemeProvider';
+
+function ThemeToggle() {
+  const { theme, toggleTheme } = useLandingTheme();
+  const isDark = theme === 'dark';
+
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className="landing-theme-toggle"
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Light mode' : 'Dark mode'}
+    >
+      {isDark ? (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
+          <path
+            d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        </svg>
+      ) : (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path
+            d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
+    </button>
+  );
+}
 
 export default function LandingNavbar() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const { theme } = useLandingTheme();
   const panelId = useId();
+  const logoVariant = theme === 'dark' ? 'dark' : 'light';
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 6);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -25,79 +72,58 @@ export default function LandingNavbar() {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[hsl(var(--navy-dark))/0.92] backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+    <header className={['landing-nav', scrolled ? 'is-scrolled' : ''].join(' ')}>
+      <div className="landing-container landing-nav-inner">
         <Link href="/" className="shrink-0" aria-label={`${PLATFORM.name} home`}>
-          <BrandLogo size="sm" branding={PLATFORM.branding} variant="dark" />
+          <BrandLogo
+            size="sm"
+            branding={PLATFORM.branding}
+            variant={logoVariant}
+            className="!text-[1.4rem] sm:!text-[1.55rem]"
+          />
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:flex" aria-label="Primary">
+        <nav className="landing-nav-links" aria-label="Primary">
           {NAV_LINKS.map((link) => (
-            <a
-              key={link.href + link.label}
-              href={link.href}
-              className="text-sm font-medium text-white/70 transition hover:text-white"
-            >
+            <a key={link.href} href={link.href}>
               {link.label}
             </a>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 sm:flex">
-          <Link
-            href="/dashboard/login"
-            className="dash-btn dash-btn-ghost dash-btn-sm !text-white/80 hover:!bg-white/10 hover:!text-white"
-          >
+        <div className="landing-nav-actions">
+          <ThemeToggle />
+          <Link href="/dashboard/login" className="landing-link-quiet hidden sm:inline">
             Login
           </Link>
-          <CtaButton href="/signup" className="!px-4 !py-2 !text-sm">
+          <CtaButton href="/signup" className="landing-btn-primary !h-9 !px-3.5 !text-sm">
             Get Started
           </CtaButton>
-        </div>
-
-        <button
-          type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 text-white lg:hidden"
-          aria-expanded={open}
-          aria-controls={panelId}
-          aria-label={open ? 'Close menu' : 'Open menu'}
-          onClick={() => setOpen((v) => !v)}
-        >
-          <span aria-hidden className="text-lg leading-none">
+          <button
+            type="button"
+            className="landing-menu-btn md:hidden"
+            aria-expanded={open}
+            aria-controls={panelId}
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            onClick={() => setOpen((v) => !v)}
+          >
             {open ? '×' : '☰'}
-          </span>
-        </button>
+          </button>
+        </div>
       </div>
 
       {open ? (
-        <div
-          id={panelId}
-          className="border-t border-white/10 bg-[hsl(var(--navy-dark))] px-4 py-4 lg:hidden"
-        >
-          <nav className="flex flex-col gap-1" aria-label="Mobile">
+        <div id={panelId} className="landing-mobile-panel md:hidden">
+          <nav aria-label="Mobile">
             {NAV_LINKS.map((link) => (
-              <a
-                key={link.href + link.label}
-                href={link.href}
-                className="rounded-lg px-3 py-2.5 text-sm font-medium text-white/80 hover:bg-white/5"
-                onClick={() => setOpen(false)}
-              >
+              <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
                 {link.label}
               </a>
             ))}
-          </nav>
-          <div className="mt-4 flex flex-col gap-2">
-            <Link
-              href="/dashboard/login"
-              className="dash-btn dash-btn-secondary dash-btn-md w-full justify-center"
-              onClick={() => setOpen(false)}
-            >
+            <Link href="/dashboard/login" onClick={() => setOpen(false)} className="sm:hidden">
               Login
             </Link>
-            <CtaButton href="/signup" className="w-full justify-center">
-              Get Started
-            </CtaButton>
-          </div>
+          </nav>
         </div>
       ) : null}
     </header>
