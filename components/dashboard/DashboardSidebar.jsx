@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LogOut, X } from 'lucide-react';
-import BrandLogo from '../BrandLogo';
+import PlatformLogo from '../PlatformLogo';
 import { DASHBOARD_NAV_GROUPS } from '../../lib/dashboard/nav';
 import { logout } from '../../lib/api/admin';
 import { ROUTE_PERMISSIONS } from '../../lib/permissions';
@@ -105,12 +105,7 @@ export default function DashboardSidebar({ open = false, onClose }) {
             onClick={onClose}
             aria-label={`${PLATFORM.name} dashboard home`}
           >
-            <BrandLogo
-              size="sm"
-              variant="light"
-              branding={PLATFORM.branding}
-              className="!text-[1.35rem]"
-            />
+            <PlatformLogo size="sm" />
           </Link>
           <button
             type="button"

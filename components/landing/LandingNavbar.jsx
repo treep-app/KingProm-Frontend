@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from 'react';
 import Link from 'next/link';
-import BrandLogo from '../BrandLogo';
+import PlatformLogo from '../PlatformLogo';
 import { PLATFORM } from '../../lib/platform';
 import { NAV_LINKS } from '../../lib/landing/content';
 import { CtaButton } from './LandingPrimitives';
@@ -49,7 +49,6 @@ export default function LandingNavbar() {
   const [scrolled, setScrolled] = useState(false);
   const { theme } = useLandingTheme();
   const panelId = useId();
-  const logoVariant = theme === 'dark' ? 'dark' : 'light';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 6);
@@ -75,12 +74,7 @@ export default function LandingNavbar() {
     <header className={['landing-nav', scrolled ? 'is-scrolled' : ''].join(' ')}>
       <div className="landing-container landing-nav-inner">
         <Link href="/" className="shrink-0" aria-label={`${PLATFORM.name} home`}>
-          <BrandLogo
-            size="sm"
-            branding={PLATFORM.branding}
-            variant={logoVariant}
-            className="!text-[1.4rem] sm:!text-[1.55rem]"
-          />
+          <PlatformLogo size="sm" priority onDark={theme === 'dark'} />
         </Link>
 
         <nav className="landing-nav-links" aria-label="Primary">

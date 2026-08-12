@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import BrandLogo from '../../../../components/BrandLogo';
+import PlatformLogo from '../../../../components/PlatformLogo';
 import { acceptInvitation } from '../../../../lib/api/teamService';
 import { setSession } from '../../../../lib/auth';
 import {
@@ -61,12 +61,9 @@ function InviteForm() {
     <div className="flex min-h-screen items-center justify-center bg-[var(--dash-bg)] px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <BrandLogo
-            size="md"
-            variant="light"
-            branding={PLATFORM.branding}
-            className="!text-[1.75rem]"
-          />
+          <div className="inline-flex justify-center">
+            <PlatformLogo size="md" priority />
+          </div>
           <p className="mt-3 text-sm text-[var(--dash-muted)]">
             Accept your {PLATFORM.name} team invitation
           </p>

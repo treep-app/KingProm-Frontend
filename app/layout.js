@@ -16,27 +16,61 @@ const playfair = Playfair_Display({
   display: 'swap',
 });
 
+const title = `${PLATFORM.name} — Digital Vouchers, Promo Codes & Campaign Management`;
+const description = PLATFORM.description;
+
 export const metadata = {
   metadataBase: new URL(PLATFORM.url),
   title: {
-    default: `${PLATFORM.name} — Digital Vouchers, Promo Codes & Campaign Management`,
+    default: title,
     template: `%s | ${PLATFORM.name}`,
   },
-  description: PLATFORM.description,
+  description,
+  applicationName: PLATFORM.name,
+  authors: [{ name: PLATFORM.name, url: PLATFORM.url }],
+  creator: PLATFORM.name,
+  publisher: PLATFORM.name,
+  keywords: [
+    'KingProm',
+    'promo codes',
+    'digital vouchers',
+    'campaign management',
+    'QR redemption',
+    'hospitality promotions',
+  ],
   openGraph: {
-    title: `${PLATFORM.name} — Digital Vouchers, Promo Codes & Campaign Management`,
+    title,
     description: PLATFORM.shortDescription,
     url: PLATFORM.url,
     siteName: PLATFORM.name,
+    locale: 'en_US',
     type: 'website',
+    images: [
+      {
+        url: PLATFORM.branding.ogImageUrl,
+        width: 1200,
+        height: 630,
+        alt: `${PLATFORM.name} — Turn promotions into revenue`,
+        type: 'image/png',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: PLATFORM.name,
+    title,
     description: PLATFORM.shortDescription,
+    images: [PLATFORM.branding.ogImageUrl],
+  },
+  icons: {
+    icon: [{ url: PLATFORM.branding.markUrl, type: 'image/png' }],
+    apple: [{ url: PLATFORM.branding.markUrl, type: 'image/png' }],
   },
   alternates: {
     canonical: `${PLATFORM.url}/`,
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

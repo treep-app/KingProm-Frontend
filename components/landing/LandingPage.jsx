@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import BrandLogo from '../BrandLogo';
+import PlatformLogo from '../PlatformLogo';
 import { PLATFORM } from '../../lib/platform';
 import {
   BENEFITS,
@@ -25,7 +25,6 @@ const ENTERPRISE = MARKETING_PLANS.find((p) => p.id === 'enterprise');
 function LandingContent() {
   const [openFaq, setOpenFaq] = useState(0);
   const { theme } = useLandingTheme();
-  const logoVariant = theme === 'dark' ? 'dark' : 'light';
 
   return (
     <>
@@ -172,12 +171,7 @@ function LandingContent() {
       <footer className="landing-footer">
         <div className="landing-container">
           <div>
-            <BrandLogo
-              size="sm"
-              branding={PLATFORM.branding}
-              variant={logoVariant}
-              className="!text-xl"
-            />
+            <PlatformLogo size="sm" onDark={theme === 'dark'} />
             <p>
               © 2026 {PLATFORM.name} · {PLATFORM.domain}
             </p>

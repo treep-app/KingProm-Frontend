@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import BrandLogo from '../BrandLogo';
+import PlatformLogo from '../PlatformLogo';
 import LandingAuthRedirect from './LandingAuthRedirect';
 import { signup } from '../../lib/api/admin';
 import {
@@ -64,7 +64,7 @@ export default function SignupForm() {
         </Link>
 
         <Link href="/" className="inline-flex w-fit" aria-label={`${PLATFORM.name} home`}>
-          <BrandLogo size="md" branding={PLATFORM.branding} variant="light" />
+          <PlatformLogo size="md" priority />
         </Link>
 
         <form onSubmit={handleSubmit} className="dash-panel mt-8 space-y-4 p-6" noValidate>

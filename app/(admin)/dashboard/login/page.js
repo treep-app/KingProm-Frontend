@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import BrandLogo from '../../../../components/BrandLogo';
+import PlatformLogo from '../../../../components/PlatformLogo';
 import { login } from '../../../../lib/api/admin';
 import {
   messageFromApiResult,
@@ -55,13 +55,8 @@ function LoginForm() {
         </Link>
 
         <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex" aria-label={`${PLATFORM.name} home`}>
-            <BrandLogo
-              size="md"
-              variant="light"
-              branding={PLATFORM.branding}
-              className="!text-[1.75rem]"
-            />
+          <Link href="/" className="inline-flex justify-center" aria-label={`${PLATFORM.name} home`}>
+            <PlatformLogo size="md" priority />
           </Link>
           <p className="mt-3 text-sm text-[var(--dash-muted)]">
             Welcome back to {PLATFORM.name}
