@@ -30,7 +30,9 @@ import { ApiErrorBanner } from './AlertBanner';
 import StatusBadge from './StatusBadge';
 import TemplatePreviewModal from './TemplatePreviewModal';
 import { TemplateRenderer } from './voucher/VoucherPreview';
-import { useTemplatePermissions } from './WorkspaceProvider';
+import { useTemplatePermissions, useTenant } from './WorkspaceProvider';
+import { useBrandingSettings } from '../../hooks/useBranding';
+import { workspacePreviewBranding } from '../../lib/dashboard/workspacePreviewBranding';
 import { useToast } from './ToastProvider';
 import {
   Button,
@@ -52,8 +54,16 @@ function TemplateCard({
   canSetDefault,
   canArchive,
 }) {
+  const tenant = useTenant();
+  const { branding: workspaceBranding } = useBrandingSettings();
   const [menuOpen, setMenuOpen] = useState(false);
-  const context = useMemo(() => buildSamplePreviewContext(), []);
+  const context = useMemo(
+    () =>
+      buildSamplePreviewContext(
+        workspacePreviewBranding(tenant, workspaceBranding),
+      ),
+    [tenant, workspaceBranding],
+  );
 
   return (
     <article className="dash-panel flex flex-col overflow-hidden">

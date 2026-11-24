@@ -1,13 +1,13 @@
+import { DEFAULT_BUSINESS_NAME } from '../lib/businessDefaults';
+
 export default function TicketCTA({
-  storeName = 'Blue Top Villa',
-  storePhone = '055 917 1787',
-  browseUrl = 'https://www.bluetopvilla.com/',
+  storeName = DEFAULT_BUSINESS_NAME,
+  storePhone = '',
+  browseUrl = '',
   compact = false,
 }) {
-  const tel = `tel:${storePhone.replace(/\s+/g, '')}`;
-  const bookUrl = browseUrl.includes('bluetopvilla')
-    ? browseUrl.replace(/\/?$/, '/')
-    : 'https://www.bluetopvilla.com/';
+  const tel = storePhone ? `tel:${storePhone.replace(/\s+/g, '')}` : '';
+  const siteUrl = browseUrl?.trim() || '';
 
   return (
     <section
@@ -16,38 +16,50 @@ export default function TicketCTA({
       }`}
     >
       <p className="text-[15px] leading-relaxed text-white/85">
-        Book your stay or plan an unforgettable event with us in Kasoa.
+        Questions about this offer? Contact {storeName} to book or redeem in person.
       </p>
-      <p className="mt-4 text-[18px] font-semibold tracking-tight text-white">Call {storeName}</p>
-      <a
-        href={tel}
-        className="mt-1 inline-block text-[20px] font-semibold tracking-tight text-[hsl(var(--gold))] underline underline-offset-4"
-      >
-        {storePhone}
-      </a>
+      {storePhone ? (
+        <>
+          <p className="mt-4 text-[18px] font-semibold tracking-tight text-white">Call {storeName}</p>
+          <a
+            href={tel}
+            className="mt-1 inline-block text-[20px] font-semibold tracking-tight text-[hsl(var(--gold))] underline underline-offset-4"
+          >
+            {storePhone}
+          </a>
+        </>
+      ) : null}
 
       <div className={`mt-6 grid gap-3 ${compact ? '' : 'sm:grid-cols-2'}`}>
-        <a href={tel} className="app-press btn-gold h-12 w-full px-6 text-[15px]">
-          Call now
-        </a>
-        <a
-          href={`${bookUrl}#book`}
-          target="_blank"
-          rel="noreferrer"
-          className="app-press btn-gold h-12 w-full px-6 text-[15px]"
-        >
-          Book a Room
-        </a>
-        <a
-          href={bookUrl}
-          target="_blank"
-          rel="noreferrer"
-          className={`app-press btn-outline-light h-12 w-full px-6 text-[15px] ${
-            compact ? '' : 'sm:col-span-2'
-          }`}
-        >
-          Plan an Event
-        </a>
+        {storePhone ? (
+          <a href={tel} className="app-press btn-gold h-12 w-full px-6 text-[15px]">
+            Call now
+          </a>
+        ) : null}
+        {siteUrl ? (
+          <a
+            href={siteUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={`app-press btn-gold h-12 w-full px-6 text-[15px] ${
+              !storePhone ? 'sm:col-span-2' : ''
+            }`}
+          >
+            Visit website
+          </a>
+        ) : null}
+        {siteUrl ? (
+          <a
+            href={siteUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={`app-press btn-outline-light h-12 w-full px-6 text-[15px] ${
+              compact ? '' : 'sm:col-span-2'
+            }`}
+          >
+            Learn more
+          </a>
+        ) : null}
       </div>
     </section>
   );

@@ -38,7 +38,7 @@ import {
 import { resolveEmailSegments } from '../../lib/dashboard/emailCampaignSegments';
 import { EMAIL_VARIABLE_OPTIONS } from '../../lib/dashboard/emailVariables';
 import { buildSamplePreviewContext } from '../../lib/dashboard/voucherVariables';
-import { ACTIVE_CAMPAIGN_LIST_LIMIT } from '../../lib/dashboard/constants';
+import { CAMPAIGN_LIST_LIMIT } from '../../lib/dashboard/constants';
 import { DASH_INPUT_CLASS, DASH_SELECT_CLASS } from '../../lib/dashboard/styles';
 import FormSection from './FormSection';
 import VoucherPreview from './voucher/VoucherPreview';
@@ -46,7 +46,9 @@ import AuthGate from './AuthGate';
 import ConfirmDialog from './ConfirmDialog';
 import { ApiErrorBanner } from './AlertBanner';
 import { useToast } from './ToastProvider';
-import { useBranding, useEmailCampaignPermissions } from './WorkspaceProvider';
+import { useEmailCampaignPermissions, useTenant } from './WorkspaceProvider';
+import { useBrandingSettings } from '../../hooks/useBranding';
+import { workspacePreviewBranding } from '../../lib/dashboard/workspacePreviewBranding';
 import {
   Button,
   EmptyState,
@@ -74,7 +76,8 @@ function EmailCampaignWizardInner({ campaignId = null }) {
   const router = useRouter();
   const toast = useToast();
   const perm = useEmailCampaignPermissions();
-  const branding = useBranding();
+  const tenant = useTenant();
+  const { branding: workspaceBranding } = useBrandingSettings();
   const editing = Boolean(campaignId);
   const bodyRef = useRef(null);
 
@@ -108,10 +111,28 @@ function EmailCampaignWizardInner({ campaignId = null }) {
     updateEmailCampaign,
   } = useEmailCampaign(campaignId, { enabled: editing });
 
-  const { items: activeCampaigns, loading: campaignsLoading } = useCampaigns({
-    status: 'ACTIVE',
-    limit: ACTIVE_CAMPAIGN_LIST_LIMIT,
+  const {
+    items: tenantCampaigns,
+    loading: campaignsLoading,
+    error: campaignsError,
+    errorResult: campaignsErrorResult,
+    reload: reloadCampaigns,
+  } = useCampaigns({
+    limit: CAMPAIGN_LIST_LIMIT,
   });
+
+  const promotionOptions = useMemo(
+    () =>
+      (tenantCampaigns || []).filter(
+        (c) => c.status === 'ACTIVE' || c.status === 'DRAFT',
+      ),
+    [tenantCampaigns],
+  );
+
+  const promotionContext = useMemo(
+    () => ({ promotionCampaigns: promotionOptions }),
+    [promotionOptions],
+  );
 
   const { items: activeTemplates, loading: templatesLoading } = useActiveTemplates();
 
@@ -128,8 +149,11 @@ function EmailCampaignWizardInner({ campaignId = null }) {
   );
 
   const voucherContext = useMemo(
-    () => buildSamplePreviewContext(branding),
-    [branding],
+    () =>
+      buildSamplePreviewContext(
+        workspacePreviewBranding(tenant, workspaceBranding),
+      ),
+    [tenant, workspaceBranding],
   );
 
   useEffect(() => {
@@ -238,7 +262,7 @@ function EmailCampaignWizardInner({ campaignId = null }) {
   }
 
   function validateCurrentStep() {
-    const errors = validateEmailCampaignForm(form, step.id);
+    const errors = validateEmailCampaignForm(form, step.id, promotionContext);
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -264,8 +288,23 @@ function EmailCampaignWizardInner({ campaignId = null }) {
     }
   }
 
+  useEffect(() => {
+    if (step.id !== 'promotion' || form.promotionCampaignId || !promotionOptions.length) {
+      return undefined;
+    }
+    const preferred =
+      promotionOptions.find((c) => c.isDefault && c.status === 'ACTIVE') ||
+      promotionOptions.find((c) => c.status === 'ACTIVE') ||
+      promotionOptions[0];
+    if (preferred?.id) {
+      setField('promotionCampaignId', preferred.id);
+    }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-pick once when options load
+  }, [step.id, promotionOptions, form.promotionCampaignId]);
+
   async function saveDraft({ silent = false } = {}) {
-    const errors = validateEmailCampaignForm(form, 'all');
+    const errors = validateEmailCampaignForm(form, 'all', promotionContext);
     if (!form.name.trim()) {
       errors.name = 'Campaign name is required';
     }
@@ -583,27 +622,75 @@ function EmailCampaignWizardInner({ campaignId = null }) {
       ) : null}
 
       {step.id === 'promotion' ? (
-        <FormSection title="Promotion" description="Link an active promotion campaign.">
+        <FormSection
+          title="Promotion"
+          description="Link a voucher/promotion campaign from your workspace. Only Active campaigns can be used when sending."
+        >
+          {campaignsError ? (
+            <ApiErrorBanner
+              message={campaignsError}
+              result={campaignsErrorResult}
+              className="mb-3"
+            />
+          ) : null}
           {campaignsLoading ? (
             <LoadingState label="Loading promotions…" />
+          ) : promotionOptions.length === 0 ? (
+            <EmptyState
+              title="No promotion campaigns yet"
+              description="Create a promotion campaign first — set status to Active before you send this email."
+              action={
+                <Button href="/dashboard/campaigns" variant="secondary">
+                  Go to Campaigns
+                </Button>
+              }
+            />
           ) : (
             <>
-              <FieldLabel htmlFor="promotionCampaignId" required>
-                Promotion campaign
-              </FieldLabel>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <FieldLabel htmlFor="promotionCampaignId" required>
+                  Promotion campaign
+                </FieldLabel>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-xs"
+                  onClick={() => reloadCampaigns()}
+                >
+                  Refresh list
+                </Button>
+              </div>
               <select
                 id="promotionCampaignId"
-                value={form.promotionCampaignId}
+                value={
+                  promotionOptions.some((c) => c.id === form.promotionCampaignId)
+                    ? form.promotionCampaignId
+                    : ''
+                }
                 onChange={(e) => setField('promotionCampaignId', e.target.value)}
                 className={DASH_SELECT_CLASS}
               >
                 <option value="">Select a campaign…</option>
-                {activeCampaigns.map((c) => (
+                {promotionOptions.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
+                    {c.offerTitle ? ` — ${c.offerTitle}` : ''}
+                    {c.status !== 'ACTIVE' ? ` [${c.status}]` : ''}
+                    {c.isDefault ? ' · default' : ''}
                   </option>
                 ))}
               </select>
+              {form.promotionCampaignId &&
+              promotionOptions.find((c) => c.id === form.promotionCampaignId)?.status ===
+                'DRAFT' ? (
+                <p className="mt-2 text-xs text-amber-800">
+                  This campaign is still a draft. Activate it under{' '}
+                  <a href="/dashboard/campaigns" className="font-medium underline">
+                    Campaigns
+                  </a>{' '}
+                  before you send this email.
+                </p>
+              ) : null}
               <FieldError message={fieldErrors.promotionCampaignId} />
             </>
           )}
@@ -945,7 +1032,7 @@ function EmailCampaignWizardInner({ campaignId = null }) {
                 type="button"
                 disabled={submitting || confirmBusy}
                 onClick={() => {
-                  const errors = validateEmailCampaignForm(form, 'all');
+                  const errors = validateEmailCampaignForm(form, 'all', promotionContext);
                   setFieldErrors(errors);
                   if (Object.keys(errors).length) {
                     toast.error('Please fix the highlighted fields.');
@@ -968,7 +1055,7 @@ function EmailCampaignWizardInner({ campaignId = null }) {
                 type="button"
                 disabled={submitting || confirmBusy}
                 onClick={() => {
-                  const errors = validateEmailCampaignForm(form, 'all');
+                  const errors = validateEmailCampaignForm(form, 'all', promotionContext);
                   setFieldErrors(errors);
                   if (Object.keys(errors).length) {
                     toast.error('Please fix the highlighted fields.');

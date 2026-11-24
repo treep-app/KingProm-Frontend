@@ -3,11 +3,22 @@
 import { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { buildSamplePreviewContext } from '../../lib/dashboard/voucherVariables';
+import { workspacePreviewBranding } from '../../lib/dashboard/workspacePreviewBranding';
+import { useBrandingSettings } from '../../hooks/useBranding';
+import { useTenant } from './WorkspaceProvider';
 import { TemplateRenderer } from './voucher/VoucherPreview';
 import { Button } from './ui';
 
 export default function TemplatePreviewModal({ open, template, onClose }) {
-  const context = useMemo(() => buildSamplePreviewContext(), []);
+  const tenant = useTenant();
+  const { branding: workspaceBranding } = useBrandingSettings();
+  const context = useMemo(
+    () =>
+      buildSamplePreviewContext(
+        workspacePreviewBranding(tenant, workspaceBranding),
+      ),
+    [tenant, workspaceBranding],
+  );
 
   if (!open || !template) return null;
 

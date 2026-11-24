@@ -1,10 +1,17 @@
 import BrandLogo from './BrandLogo';
+import { getCurrentTenant } from '../lib/tenant';
+import { DEFAULT_BUSINESS_NAME } from '../lib/businessDefaults';
 
 function Shimmer({ className = '' }) {
   return <div className={`ticket-shimmer ${className}`} aria-hidden />;
 }
 
-export default function TicketLoadingPlaceholder({ message = 'Validating your Golden Ticket…' }) {
+export default function TicketLoadingPlaceholder({
+  message = 'Validating your Golden Ticket…',
+  storeName,
+}) {
+  const foilLabel = storeName || getCurrentTenant().name || DEFAULT_BUSINESS_NAME;
+
   return (
     <main className="promo-stage" aria-busy="true" aria-live="polite">
       {/* Mobile loading */}
@@ -20,7 +27,7 @@ export default function TicketLoadingPlaceholder({ message = 'Validating your Go
             <div className="ticket-mask absolute inset-0 overflow-hidden shadow-2xl shadow-cyan-500/10 ring-1 ring-cyan-400/25">
               <div className="gold-foil foil-animate absolute inset-0" />
               <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
-                <p className="text-lg font-semibold tracking-wide text-neutral-900">Blue Top Villa</p>
+                <p className="text-lg font-semibold tracking-wide text-neutral-900">{foilLabel}</p>
                 <p className="mt-8 text-[42px] font-extrabold leading-none tracking-wide text-neutral-900">
                   GOLDEN
                 </p>
@@ -51,9 +58,7 @@ export default function TicketLoadingPlaceholder({ message = 'Validating your Go
               <div className="ticket-mask absolute inset-0 overflow-hidden shadow-[0_18px_50px_rgba(0,0,0,0.55)]">
                 <div className="gold-foil foil-animate absolute inset-0" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
-                  <p className="text-lg font-semibold tracking-wide text-neutral-900">
-                    Blue Top Villa
-                  </p>
+                  <p className="text-lg font-semibold tracking-wide text-neutral-900">{foilLabel}</p>
                   <p className="mt-8 text-[42px] font-extrabold leading-none tracking-wide text-neutral-900">
                     GOLDEN
                   </p>

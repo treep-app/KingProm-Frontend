@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import StarRow from './StarRow';
+import RevealEffectPlayer from './reveal/RevealEffectPlayer';
+import { DEFAULT_REVEAL_EFFECT, DEFAULT_REVEAL_MODE } from '../lib/revealEffects';
 
 const BRUSH = 28;
 const REVEAL_AT = 0.4;
 
-function drawCover(ctx, width, height) {
+function drawCover(ctx, width, height, storeName = 'Golden Ticket', tapMode = false) {
   // Metallic gold foil coat
   const gradient = ctx.createLinearGradient(0, 0, width, height);
   gradient.addColorStop(0, '#9a7410');
@@ -37,7 +39,8 @@ function drawCover(ctx, width, height) {
   ctx.textBaseline = 'middle';
 
   ctx.font = '600 20px Georgia, "Times New Roman", serif';
-  ctx.fillText('Blue Top Villa', width / 2, height * 0.16);
+  const label = String(storeName || 'Golden Ticket').slice(0, 28);
+  ctx.fillText(label, width / 2, height * 0.16);
 
   drawStars(ctx, width / 2, height * 0.26, 5, 7, '#5c4208');
   drawLine(ctx, width * 0.22, height * 0.32, width * 0.78, 'rgba(17,17,17,0.45)');
@@ -50,7 +53,7 @@ function drawCover(ctx, width, height) {
   drawStars(ctx, width / 2, height * 0.68, 5, 7, '#5c4208');
 
   ctx.font = '500 20px "Helvetica Neue", Helvetica, Arial, sans-serif';
-  ctx.fillText('Scratch to reveal', width / 2, height * 0.78);
+  ctx.fillText(tapMode ? 'Tap to reveal' : 'Scratch to reveal', width / 2, height * 0.78);
 
   drawStars(ctx, width / 2, height * 0.88, 5, 7, '#5c4208');
 }
@@ -111,6 +114,9 @@ export default function ScratchTicket({
   promoCode,
   onRevealed,
   disabled = false,
+  storeName = 'Golden Ticket',
+  revealEffect = DEFAULT_REVEAL_EFFECT,
+  revealMode = DEFAULT_REVEAL_MODE,
 }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -120,6 +126,8 @@ export default function ScratchTicket({
   const [revealed, setRevealed] = useState(false);
   const [ready, setReady] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+  const [effectPlaying, setEffectPlaying] = useState(false);
+  const isTap = revealMode === 'tap';
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -141,11 +149,12 @@ export default function ScratchTicket({
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawCover(ctx, cssW, cssH);
+      drawCover(ctx, cssW, cssH, storeName, isTap);
 
       done.current = false;
       setRevealed(false);
       setCelebrate(false);
+      setEffectPlaying(false);
       setReady(true);
       canvas.style.opacity = '1';
       canvas.style.pointerEvents = disabled ? 'none' : 'auto';
@@ -157,9 +166,10 @@ export default function ScratchTicket({
     });
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [disabled]);
+  }, [disabled, isTap, storeName]);
 
   function erase(x, y) {
+    if (isTap) return;
     const canvas = canvasRef.current;
     if (!canvas || disabled || done.current || !ready) return;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -205,18 +215,12 @@ export default function ScratchTicket({
     if (ratio >= REVEAL_AT) finishReveal();
   }
 
-  function finishReveal() {
+  function fadeCoverCanvas() {
     const canvas = canvasRef.current;
-    if (!canvas || done.current) return;
-    done.current = true;
-    setRevealed(true);
-    setCelebrate(true);
-    haptic([10, 30, 18]);
-    onRevealed?.();
-
+    if (!canvas) return;
     let opacity = 1;
     const fade = () => {
-      opacity -= 0.07;
+      opacity -= isTap ? 0.14 : 0.07;
       if (opacity <= 0) {
         const ctx = canvas.getContext('2d');
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -229,6 +233,35 @@ export default function ScratchTicket({
       requestAnimationFrame(fade);
     };
     requestAnimationFrame(fade);
+  }
+
+  function finishReveal() {
+    const canvas = canvasRef.current;
+    if (!canvas || done.current) return;
+    done.current = true;
+    setEffectPlaying(true);
+    haptic([10, 30, 18]);
+    if (!isTap) {
+      setRevealed(true);
+      setCelebrate(true);
+      fadeCoverCanvas();
+      onRevealed?.();
+    }
+  }
+
+  function handleEffectComplete() {
+    setEffectPlaying(false);
+    if (isTap) {
+      setRevealed(true);
+      setCelebrate(true);
+      fadeCoverCanvas();
+      onRevealed?.();
+    }
+  }
+
+  function handleTapReveal() {
+    if (disabled || done.current || !ready || !isTap) return;
+    finishReveal();
   }
 
   function start(clientX, clientY) {
@@ -253,7 +286,7 @@ export default function ScratchTicket({
   // Non-passive touchmove so preventDefault stops page scroll while scratching
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || disabled) return undefined;
+    if (!canvas || disabled || isTap) return undefined;
 
     const onTouchStart = (e) => {
       if (done.current || !ready) return;
@@ -290,14 +323,14 @@ export default function ScratchTicket({
       canvas.removeEventListener('touchend', onTouchEnd);
       canvas.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [disabled, ready]);
+  }, [disabled, ready, isTap]);
 
   return (
     <div
       ref={wrapRef}
       className={`scratch-surface relative mx-auto aspect-[320/460] w-full max-w-sm select-none sm:max-w-md ${
         celebrate ? 'ticket-celebrate' : ''
-      }`}
+      } ${effectPlaying && revealEffect === 'card-flip' ? 'reveal-card-flip-active' : ''}`}
     >
       <div
         className={`ticket-mask absolute inset-0 overflow-hidden shadow-2xl shadow-cyan-500/10 ring-1 ring-cyan-400/25 transition-transform duration-500 ${
@@ -309,8 +342,8 @@ export default function ScratchTicket({
         <div
           className={`absolute inset-[7%] flex flex-col items-center justify-center rounded-[18px] bg-[#2a2a2a] px-5 text-center transition-all duration-500 ${
             revealed ? 'reveal-pop opacity-100' : 'opacity-90'
-          }`}
-          aria-hidden={!revealed}
+          } ${effectPlaying && !revealed ? 'opacity-0' : ''}`}
+          aria-hidden={!revealed && !effectPlaying}
         >
           <StarRow color="#e8c547" size={12} />
           <p className="mt-2 text-[24px] font-extrabold tracking-wide text-[#e8c547] sm:text-[26px]">
@@ -328,17 +361,28 @@ export default function ScratchTicket({
 
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 h-full w-full cursor-crosshair touch-none"
-          onMouseDown={(e) => start(e.clientX, e.clientY)}
-          onMouseMove={(e) => move(e.clientX, e.clientY)}
-          onMouseUp={end}
-          onMouseLeave={end}
+          className={`absolute inset-0 h-full w-full touch-none ${
+            isTap ? 'cursor-pointer' : 'cursor-crosshair'
+          }`}
+          onMouseDown={
+            isTap ? undefined : (e) => start(e.clientX, e.clientY)
+          }
+          onMouseMove={isTap ? undefined : (e) => move(e.clientX, e.clientY)}
+          onMouseUp={isTap ? undefined : end}
+          onMouseLeave={isTap ? undefined : end}
+          onClick={isTap ? handleTapReveal : undefined}
+        />
+
+        <RevealEffectPlayer
+          effectId={revealEffect}
+          active={effectPlaying}
+          onComplete={handleEffectComplete}
         />
       </div>
 
       {!revealed && !disabled && (
         <p className="pointer-events-none absolute -bottom-7 left-0 right-0 text-center text-xs text-cyan-200/55">
-          Scratch the gold foil
+          {isTap ? 'Tap the gold foil' : 'Scratch the gold foil'}
         </p>
       )}
     </div>

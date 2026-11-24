@@ -3,8 +3,8 @@ import GoldenTicketPage from '../../../components/GoldenTicketPage';
 import TicketLoadingPlaceholder from '../../../components/TicketLoadingPlaceholder';
 
 export const metadata = {
-  title: 'Golden Ticket | Blue Top Villa',
-  description: 'Scratch to reveal your exclusive Blue Top Villa offer',
+  title: 'Golden Ticket',
+  description: 'Scratch to reveal your exclusive offer',
 };
 
 export default function GoldenTicketRoute() {

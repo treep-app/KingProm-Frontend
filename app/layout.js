@@ -48,6 +48,7 @@ export const metadata = {
     images: [
       {
         url: PLATFORM.branding.ogImageUrl,
+        secureUrl: PLATFORM.branding.ogImageUrl,
         width: 1200,
         height: 630,
         alt: `${PLATFORM.name} — Turn promotions into revenue`,

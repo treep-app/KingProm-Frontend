@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Save, ShieldOff } from 'lucide-react';
 import { PERMISSIONS } from '../../lib/permissions';
 import { useTemplate } from '../../hooks/useTemplate';
+import { useAdminAssetSrc } from '../../hooks/useAdminAssetSrc';
+import * as templateService from '../../lib/api/templateService';
 import {
   fieldErrorsFromApiResult,
   messageFromApiResult,
@@ -23,7 +25,11 @@ import FormSection from './FormSection';
 import ImageUploadField from './ImageUploadField';
 import { ApiErrorBanner } from './AlertBanner';
 import VoucherPreview from './voucher/VoucherPreview';
-import { useTemplatePermissions } from './WorkspaceProvider';
+import TemplateScratchPreview from './TemplateScratchPreview';
+import { REVEAL_EFFECTS, REVEAL_MODES } from '../../lib/revealEffects';
+import { useTemplatePermissions, useTenant } from './WorkspaceProvider';
+import { useBrandingSettings } from '../../hooks/useBranding';
+import { workspacePreviewBranding } from '../../lib/dashboard/workspacePreviewBranding';
 import { useToast } from './ToastProvider';
 import {
   Button,
@@ -98,6 +104,8 @@ function TemplateEditorInner({ mode = 'create', templateId = null }) {
   const router = useRouter();
   const toast = useToast();
   const templatesPerm = useTemplatePermissions();
+  const tenant = useTenant();
+  const { branding: workspaceBranding } = useBrandingSettings();
   const isEdit = mode === 'edit';
 
   const {
@@ -126,9 +134,20 @@ function TemplateEditorInner({ mode = 'create', templateId = null }) {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBg, setUploadingBg] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [pendingLogoDataUrl, setPendingLogoDataUrl] = useState(null);
+  const [pendingBackgroundDataUrl, setPendingBackgroundDataUrl] = useState(null);
   const initialized = useRef(false);
 
-  const previewContext = useMemo(() => buildSamplePreviewContext(), []);
+  const displayLogoUrl = useAdminAssetSrc(logoUrl);
+  const displayBackgroundUrl = useAdminAssetSrc(backgroundUrl);
+
+  const previewContext = useMemo(
+    () =>
+      buildSamplePreviewContext(
+        workspacePreviewBranding(tenant, workspaceBranding),
+      ),
+    [tenant, workspaceBranding],
+  );
 
   useEffect(() => {
     if (!isEdit || !template || initialized.current) return;
@@ -217,19 +236,69 @@ function TemplateEditorInner({ mode = 'create', templateId = null }) {
         return;
       }
 
+      let savedId = templateId;
+      if (!isEdit) {
+        savedId = result.data?.template?.id;
+        if (!savedId) {
+          toast.error('Template created but id missing — open Templates to continue.');
+          router.push('/dashboard/templates');
+          return;
+        }
+
+        if (pendingLogoDataUrl) {
+          const logoResult = await templateService.uploadTemplateLogo(savedId, {
+            image: pendingLogoDataUrl,
+          });
+          if (!logoResult.ok) {
+            toast.error(messageFromApiResult(logoResult, 'Template saved; logo upload failed.'));
+          } else {
+            setPendingLogoDataUrl(null);
+          }
+        }
+        if (pendingBackgroundDataUrl) {
+          const bgResult = await templateService.uploadTemplateBackground(savedId, {
+            image: pendingBackgroundDataUrl,
+          });
+          if (!bgResult.ok) {
+            toast.error(
+              messageFromApiResult(bgResult, 'Template saved; background upload failed.'),
+            );
+          } else {
+            setPendingBackgroundDataUrl(null);
+          }
+        }
+      }
+
       setDirty(false);
       toast.success(isEdit ? 'Template saved' : 'Template created');
-      router.push('/dashboard/templates');
+      router.push(
+        isEdit
+          ? '/dashboard/templates'
+          : `/dashboard/templates/${encodeURIComponent(savedId)}/edit`,
+      );
     } catch (err) {
       toast.error(messageFromCaughtError(err, 'Unable to save the template.'));
     } finally {
       setSubmitting(false);
     }
-  }, [form, isEdit, updateTemplate, createTemplate, router, toast]);
+  }, [
+    form,
+    isEdit,
+    templateId,
+    updateTemplate,
+    createTemplate,
+    router,
+    toast,
+    pendingLogoDataUrl,
+    pendingBackgroundDataUrl,
+  ]);
 
   async function handleLogoUpload(dataUrl) {
     if (!isEdit || !templateId) {
-      toast.error('Save the template first, then upload a logo.');
+      setPendingLogoDataUrl(dataUrl);
+      setLogoUrl(dataUrl);
+      setDirty(true);
+      toast.success('Logo ready — applies when you save the template.');
       return;
     }
     setUploadingLogo(true);
@@ -239,7 +308,8 @@ function TemplateEditorInner({ mode = 'create', templateId = null }) {
         toast.error(messageFromApiResult(result, 'Logo upload failed.'));
         return;
       }
-      setLogoUrl(result.data?.template?.logoUrl || logoUrl);
+      setLogoUrl(result.data?.template?.logoUrl || dataUrl);
+      setPendingLogoDataUrl(null);
       setDirty(true);
       toast.success('Logo uploaded');
       reload();
@@ -250,7 +320,10 @@ function TemplateEditorInner({ mode = 'create', templateId = null }) {
 
   async function handleBackgroundUpload(dataUrl) {
     if (!isEdit || !templateId) {
-      toast.error('Save the template first, then upload a background.');
+      setPendingBackgroundDataUrl(dataUrl);
+      setBackgroundUrl(dataUrl);
+      setDirty(true);
+      toast.success('Background ready — applies when you save the template.');
       return;
     }
     setUploadingBg(true);
@@ -260,13 +333,46 @@ function TemplateEditorInner({ mode = 'create', templateId = null }) {
         toast.error(messageFromApiResult(result, 'Background upload failed.'));
         return;
       }
-      setBackgroundUrl(result.data?.template?.backgroundUrl || backgroundUrl);
+      setBackgroundUrl(result.data?.template?.backgroundUrl || dataUrl);
+      setPendingBackgroundDataUrl(null);
       setDirty(true);
       toast.success('Background uploaded');
       reload();
     } finally {
       setUploadingBg(false);
     }
+  }
+
+  async function handleLogoRemove() {
+    setLogoUrl(null);
+    setPendingLogoDataUrl(null);
+    setDirty(true);
+    if (!isEdit || !templateId) return;
+    const nextConfig = deepCloneConfig(form.config);
+    nextConfig.logoAssetId = null;
+    const result = await updateTemplate({ config: nextConfig });
+    if (!result.ok) {
+      toast.error(messageFromApiResult(result, 'Unable to remove logo.'));
+      return;
+    }
+    toast.success('Logo removed');
+    reload();
+  }
+
+  async function handleBackgroundRemove() {
+    setBackgroundUrl(null);
+    setPendingBackgroundDataUrl(null);
+    setDirty(true);
+    if (!isEdit || !templateId) return;
+    const nextConfig = deepCloneConfig(form.config);
+    nextConfig.backgroundAssetId = null;
+    const result = await updateTemplate({ config: nextConfig });
+    if (!result.ok) {
+      toast.error(messageFromApiResult(result, 'Unable to remove background.'));
+      return;
+    }
+    toast.success('Background removed');
+    reload();
   }
 
   const canSave = isEdit ? templatesPerm.edit : templatesPerm.create;
@@ -407,21 +513,31 @@ function TemplateEditorInner({ mode = 'create', templateId = null }) {
 
           <FormSection
             title="Images"
-            description={isEdit ? undefined : 'Save the template first to upload images.'}
+            description={
+              isEdit
+                ? 'Logo max 512 KB · background max 1 MB · PNG, JPEG, or WebP.'
+                : 'Pick images now — they upload when you create the template.'
+            }
           >
             <ImageUploadField
               label="Logo"
-              currentUrl={logoUrl}
+              hint="PNG, JPEG, or WebP · max 512 KB"
+              maxBytes={512 * 1024}
+              currentUrl={displayLogoUrl || logoUrl}
               uploading={uploadingLogo}
-              disabled={!isEdit}
+              disabled={false}
               onUpload={handleLogoUpload}
+              onRemove={handleLogoRemove}
             />
             <ImageUploadField
               label="Background"
-              currentUrl={backgroundUrl}
+              hint="PNG, JPEG, or WebP · max 1 MB"
+              maxBytes={1024 * 1024}
+              currentUrl={displayBackgroundUrl || backgroundUrl}
               uploading={uploadingBg}
-              disabled={!isEdit}
+              disabled={false}
               onUpload={handleBackgroundUpload}
+              onRemove={handleBackgroundRemove}
             />
             <div>
               <label htmlFor="overlay" className="mb-1.5 block text-xs font-medium text-[var(--dash-muted)]">
@@ -438,6 +554,55 @@ function TemplateEditorInner({ mode = 'create', templateId = null }) {
                 }
                 className="w-full"
               />
+            </div>
+          </FormSection>
+
+          <FormSection
+            title="Guest reveal experience"
+            description="Animation after tap or scratch, and how guests uncover the promo code on the golden ticket."
+          >
+            <div>
+              <label htmlFor="reveal-mode" className="mb-1.5 block text-xs font-medium text-[var(--dash-muted)]">
+                Interaction
+              </label>
+              <select
+                id="reveal-mode"
+                value={form.config.experience?.revealMode || 'scratch'}
+                onChange={(e) => setConfigPath('experience.revealMode', e.target.value)}
+                className={DASH_SELECT_CLASS}
+              >
+                {REVEAL_MODES.map((mode) => (
+                  <option key={mode.id} value={mode.id}>
+                    {mode.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-[11px] text-[var(--dash-muted)]">
+                {REVEAL_MODES.find((m) => m.id === (form.config.experience?.revealMode || 'scratch'))
+                  ?.description}
+              </p>
+            </div>
+            <div>
+              <label htmlFor="reveal-effect" className="mb-1.5 block text-xs font-medium text-[var(--dash-muted)]">
+                Reveal effect
+              </label>
+              <select
+                id="reveal-effect"
+                value={form.config.experience?.revealEffect || 'fireworks'}
+                onChange={(e) => setConfigPath('experience.revealEffect', e.target.value)}
+                className={DASH_SELECT_CLASS}
+              >
+                {REVEAL_EFFECTS.map((fx) => (
+                  <option key={fx.id} value={fx.id}>
+                    {fx.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-[11px] text-[var(--dash-muted)]">
+                {REVEAL_EFFECTS.find(
+                  (fx) => fx.id === (form.config.experience?.revealEffect || 'fireworks'),
+                )?.description}
+              </p>
             </div>
           </FormSection>
 
@@ -505,10 +670,16 @@ function TemplateEditorInner({ mode = 'create', templateId = null }) {
             <VoucherPreview
               config={form.config}
               context={previewContext}
-              logoUrl={logoUrl}
-              backgroundUrl={backgroundUrl}
+              logoUrl={logoUrl || pendingLogoDataUrl}
+              backgroundUrl={backgroundUrl || pendingBackgroundDataUrl}
               showSampleBadge
             />
+            <div className="mt-6 border-t border-[var(--dash-border)] pt-6">
+              <TemplateScratchPreview
+                config={form.config}
+                storeName={previewContext?.business?.name || tenant?.name || 'Your business'}
+              />
+            </div>
           </FormSection>
         </div>
       </div>

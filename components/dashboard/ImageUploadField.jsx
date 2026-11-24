@@ -27,6 +27,7 @@ export default function ImageUploadField({
   onRemove,
   uploading = false,
   disabled = false,
+  maxBytes = MAX_BYTES,
 }) {
   const inputRef = useRef(null);
   const [preview, setPreview] = useState(null);
@@ -49,8 +50,9 @@ export default function ImageUploadField({
       setError('Use PNG, JPEG, or WebP.');
       return;
     }
-    if (file.size > MAX_BYTES) {
-      setError('Image must be 2 MB or smaller.');
+    if (file.size > maxBytes) {
+      const mb = (maxBytes / (1024 * 1024)).toFixed(maxBytes >= 1024 * 1024 ? 0 : 2);
+      setError(`Image must be ${mb} MB or smaller.`);
       return;
     }
 

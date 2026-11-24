@@ -1,5 +1,6 @@
 'use client';
 
+import { useAdminAssetSrc } from '../../../hooks/useAdminAssetSrc';
 import { renderTemplateString } from '../../../lib/dashboard/voucherVariables';
 import VoucherDescription from './VoucherDescription';
 import VoucherFooter from './VoucherFooter';
@@ -23,6 +24,9 @@ export default function TemplateRenderer({
   compact = false,
   showSampleBadge = false,
 }) {
+  const resolvedLogoUrl = useAdminAssetSrc(logoUrl);
+  const resolvedBackgroundUrl = useAdminAssetSrc(backgroundUrl);
+
   const cfg = config || {};
   const content = cfg.content || {};
   const typography = cfg.typography || {};
@@ -53,7 +57,7 @@ export default function TemplateRenderer({
       <VoucherHeader primaryColor={primaryColor} accentColor={accentColor}>
         {rendered.header}
       </VoucherHeader>
-      <VoucherLogo src={logoUrl} />
+      <VoucherLogo src={resolvedLogoUrl} />
       <VoucherTitle
         headingStyle={typography.headingStyle}
         secondaryColor={secondaryColor}
@@ -108,12 +112,12 @@ export default function TemplateRenderer({
       className="relative overflow-hidden rounded-xl border border-[var(--dash-border)] shadow-sm"
       style={{ backgroundColor: accentColor || '#FFFFFF' }}
     >
-      {backgroundUrl ? (
+      {resolvedBackgroundUrl ? (
         <>
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{
-              backgroundImage: `url(${backgroundUrl})`,
+              backgroundImage: `url(${resolvedBackgroundUrl})`,
               backgroundPosition: background.position || 'center',
               backgroundSize: background.size || 'cover',
             }}
