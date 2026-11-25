@@ -9,26 +9,19 @@ import { messageFromApiResult } from '../../lib/api/errors';
 import { buildDashboardKpis } from '../../lib/dashboard/buildDashboardKpis';
 import { buildActiveCampaignRows } from '../../lib/dashboard/buildActiveCampaignRows';
 import {
-  ACTIVE_CAMPAIGN_LIST_LIMIT,
   ANALYTICS_DAY_OPTIONS,
+  DASHBOARD_OVERVIEW_CAMPAIGN_ROWS,
   DEFAULT_ANALYTICS_DAYS,
   RECENT_ACTIVITY_PREVIEW_LIMIT,
-  TICKET_LIFECYCLE_STEPS,
 } from '../../lib/dashboard/constants';
 import { DASH_SELECT_COMPACT_CLASS } from '../../lib/dashboard/styles';
-import KpiCards from './KpiCards';
 import AnalyticsPreview from './AnalyticsPreview';
 import ActiveCampaignsSection from './ActiveCampaignsSection';
 import QuickActionsSection from './QuickActionsSection';
-import WorkspaceModulesSection from './WorkspaceModulesSection';
 import { RecentActivitySection } from './activity';
-import {
-  Button,
-  PageContainer,
-  PageHeader,
-  SectionHeader,
-  StatusBadge,
-} from './ui';
+import DashboardPlanOverview from './DashboardPlanOverview';
+import DashboardTicketLifecycleCompact from './DashboardTicketLifecycleCompact';
+import { Button, PageContainer, PageHeader } from './ui';
 
 export default function OverviewDashboard() {
   const [days, setDays] = useState(DEFAULT_ANALYTICS_DAYS);
@@ -54,11 +47,10 @@ export default function OverviewDashboard() {
     setError(null);
     setCampaignsError(null);
 
-    // Parallel independent fetches — KPI cards can settle before the series chart.
     const summaryPromise = campaignService.getAnalyticsSummary({ days });
     const campaignsPromise = campaignService.listCampaigns({
       status: 'ACTIVE',
-      limit: ACTIVE_CAMPAIGN_LIST_LIMIT,
+      limit: Math.max(DASHBOARD_OVERVIEW_CAMPAIGN_ROWS, 6),
     });
     const seriesPromise = analyticsService.getRedemptionsSeries({ days });
 
@@ -85,7 +77,6 @@ export default function OverviewDashboard() {
       setCampaignsError(messageFromApiResult(campaignsRes, 'Unable to load campaigns.'));
     }
 
-    // Unblock KPI + campaigns UI while series continues.
     setLoading(false);
 
     const seriesRes = await seriesPromise;
@@ -118,12 +109,13 @@ export default function OverviewDashboard() {
         });
 
   return (
-    <PageContainer>
+    <PageContainer className="space-y-4 sm:space-y-5">
       <PageHeader
-        title="Dashboard"
-        description="Overview of your promotions, vouchers, redemptions and campaign performance."
+        compact
+        title="Overview"
+        description="Promotions, redemptions, and live campaign health."
         actions={
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             <label className="sr-only" htmlFor="dashboard-range">
               Date range
             </label>
@@ -131,7 +123,7 @@ export default function OverviewDashboard() {
               id="dashboard-range"
               value={days}
               onChange={(e) => setDays(Number(e.target.value))}
-              className={`${DASH_SELECT_COMPACT_CLASS} h-11 w-full sm:h-9 sm:w-auto`}
+              className={`${DASH_SELECT_COMPACT_CLASS} h-9 w-full sm:w-auto`}
             >
               {ANALYTICS_DAY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -139,46 +131,43 @@ export default function OverviewDashboard() {
                 </option>
               ))}
             </select>
-            <Button href="/dashboard/promo-codes" className="w-full sm:w-auto">
-              Manage promo codes
+            <Button href="/dashboard/promo-codes" size="sm" className="w-full sm:w-auto">
+              Promo codes
               <ArrowRight className="size-4" />
             </Button>
           </div>
         }
       />
 
-      <KpiCards items={kpis} />
-      <QuickActionsSection />
-      <AnalyticsPreview
-        days={days}
-        series={series}
-        source={seriesSource}
-        loading={loading}
-        error={error}
+      <DashboardPlanOverview
+        kpis={kpis}
+        mobileQuickActions={<QuickActionsSection layout="strip" />}
+        analytics={
+          <AnalyticsPreview
+            days={days}
+            series={series}
+            source={seriesSource}
+            loading={loading}
+            error={error}
+            compact
+          />
+        }
+        campaigns={
+          <ActiveCampaignsSection
+            rows={campaignRows}
+            source={campaignRows ? 'live' : null}
+            loading={loading && activeCampaigns == null}
+            error={campaignsError}
+            maxRows={DASHBOARD_OVERVIEW_CAMPAIGN_ROWS}
+            compact
+          />
+        }
+        railTop={<QuickActionsSection layout="rail" />}
+        railMiddle={<DashboardTicketLifecycleCompact />}
+        railBottom={
+          <RecentActivitySection limit={RECENT_ACTIVITY_PREVIEW_LIMIT} compact />
+        }
       />
-      <ActiveCampaignsSection
-        rows={campaignRows}
-        source={campaignRows ? 'live' : null}
-        loading={loading && activeCampaigns == null}
-        error={campaignsError}
-      />
-
-      <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr] lg:items-start">
-        <RecentActivitySection limit={RECENT_ACTIVITY_PREVIEW_LIMIT} />
-        <div className="space-y-3">
-          <SectionHeader title="Ticket lifecycle" />
-          <div className="dash-panel divide-y divide-[var(--dash-border)]">
-            {TICKET_LIFECYCLE_STEPS.map((step) => (
-              <div key={step.status} className="flex items-center justify-between gap-3 px-5 py-3.5">
-                <StatusBadge status={step.status} />
-                <p className="text-sm text-[var(--dash-muted)]">{step.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <WorkspaceModulesSection />
     </PageContainer>
   );
 }

@@ -18,7 +18,7 @@ import { getCurrentUser } from '../../lib/currentUser';
 import { createPermissionChecker } from '../../lib/permissions';
 import AlertBanner from './AlertBanner';
 import AuthGate from './AuthGate';
-import UsageMeters from './UsageMeters';
+import UsageMeters, { PLANS_SECTION_ID, scrollToPlansSection } from './UsageMeters';
 import {
   Button,
   LoadingState,
@@ -75,18 +75,41 @@ function BillingSettingsInner() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.hash === `#${PLANS_SECTION_ID}`) {
+      window.requestAnimationFrame(() => scrollToPlansSection());
+    }
+  }, [loading]);
+
+  function planRank(planId) {
+    const p = (data?.plans || []).find((row) => row.id === planId);
+    return typeof p?.rank === 'number' ? p.rank : 0;
+  }
+
   async function startCheckout(planId) {
     if (!canManage) return;
     setBusy(planId);
     setError('');
     setDowngradeBlockers(null);
 
-    const preview = await billingService.previewDowngrade(planId);
-    if (preview.ok && preview.data?.allowed === false) {
-      setDowngradeBlockers(preview.data.blockers || []);
-      setError(preview.data.message || 'Reduce usage before switching to this plan.');
-      setBusy('');
-      return;
+    const currentRank = planRank(data?.plan?.id);
+    const targetRank = planRank(planId);
+    const isDowngrade = targetRank < currentRank;
+
+    if (isDowngrade) {
+      const preview = await billingService.previewDowngrade(planId);
+      if (!preview.ok) {
+        setBusy('');
+        setError(messageFromApiResult(preview, 'Unable to preview plan change.'));
+        return;
+      }
+      if (preview.data?.allowed === false) {
+        setDowngradeBlockers(preview.data.blockers || []);
+        setError(preview.data.message || 'Reduce usage before switching to this plan.');
+        setBusy('');
+        return;
+      }
     }
 
     const result = await billingService.changePlan(planId);
@@ -96,8 +119,16 @@ function BillingSettingsInner() {
       setError(messageFromApiResult(result, 'Unable to change plan.'));
       return;
     }
-    if (result.data?.checkoutRequired && result.data?.url) {
-      window.location.href = result.data.url;
+    if (result.data?.checkoutRequired) {
+      if (result.data?.url) {
+        window.location.href = result.data.url;
+        return;
+      }
+      setError(
+        data?.stripeConfigured
+          ? 'Checkout could not be started. Try again or contact support.'
+          : 'Paid upgrades need Stripe on the server (STRIPE_SECRET_KEY and plan price IDs).',
+      );
       return;
     }
     setNotice(`Plan updated to ${planId}.`);
@@ -240,7 +271,9 @@ function BillingSettingsInner() {
       />
       <UsageMeters usageReport={data?.usageReport} />
 
-      <SectionHeader title="Available plans" description="Upgrade or change your subscription." />
+      <div id={PLANS_SECTION_ID} className="scroll-mt-24">
+        <SectionHeader title="Available plans" description="Upgrade or change your subscription." />
+      </div>
       {!plans.length ? (
         <p className="text-sm text-[var(--dash-muted)]">
           Choose a plan to unlock more features.

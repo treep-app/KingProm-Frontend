@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { formatUsagePair } from '../../lib/billingDisplay';
 
 const LABELS = {
@@ -10,6 +11,40 @@ const LABELS = {
   users: 'Users',
   campaigns: 'Campaigns',
 };
+
+const PLANS_SECTION_ID = 'available-plans';
+
+function scrollToPlansSection() {
+  const el = document.getElementById(PLANS_SECTION_ID);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function UpgradePlanLink({ children, className = '' }) {
+  const pathname = usePathname();
+  const onBilling =
+    pathname === '/dashboard/settings/billing' ||
+    pathname?.startsWith('/dashboard/settings/billing/');
+
+  function handleClick(event) {
+    if (!onBilling) return;
+    event.preventDefault();
+    scrollToPlansSection();
+    if (window.location.hash !== `#${PLANS_SECTION_ID}`) {
+      window.history.replaceState(null, '', `#${PLANS_SECTION_ID}`);
+    }
+  }
+
+  return (
+    <Link
+      href={`/dashboard/settings/billing#${PLANS_SECTION_ID}`}
+      onClick={handleClick}
+      className={`font-semibold text-rose-950 underline decoration-rose-400 underline-offset-2 hover:text-rose-900 ${className}`}
+    >
+      {children}
+    </Link>
+  );
+}
 
 /**
  * Usage meters with 80%/100% warnings.
@@ -30,17 +65,14 @@ export default function UsageMeters({ usageReport }) {
       {anyBlocked ? (
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
           You have reached a plan limit.{' '}
-          <Link href="/dashboard/settings/billing" className="font-medium underline">
-            Upgrade your plan
-          </Link>{' '}
-          to continue.
+          <UpgradePlanLink>Upgrade your plan</UpgradePlanLink> to continue.
         </div>
       ) : anyWarning ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           You are approaching your plan limit.{' '}
-          <Link href="/dashboard/settings/billing" className="font-medium underline">
-            Review billing
-          </Link>
+          <UpgradePlanLink className="text-amber-950 decoration-amber-500 hover:text-amber-900">
+            Review plans
+          </UpgradePlanLink>
           .
         </div>
       ) : null}
@@ -76,3 +108,5 @@ export default function UsageMeters({ usageReport }) {
     </div>
   );
 }
+
+export { PLANS_SECTION_ID, scrollToPlansSection };

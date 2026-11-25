@@ -16,6 +16,7 @@ export default function RecentActivitySection({
   status = null,
   errorMessage = null,
   limit = 5,
+  compact = false,
 }) {
   const usingDemo = !items?.length;
   const data = usingDemo ? DEMO_ACTIVITY_ITEMS : items;
@@ -23,12 +24,12 @@ export default function RecentActivitySection({
   const feedStatus = status || (data.length ? 'ready' : 'empty');
 
   return (
-    <section aria-label="Recent activity" className="space-y-3">
+    <section aria-label="Recent activity" className={compact ? 'space-y-2' : 'space-y-3'}>
       <SectionHeader
-        title="Recent Activity"
-        description="Latest operator and system events across your workspace"
+        title="Recent activity"
+        description={compact ? null : 'Latest operator and system events across your workspace'}
         href="/dashboard/audit-log"
-        linkLabel="View audit log"
+        linkLabel="Audit log"
       />
 
       <ActivityFeed

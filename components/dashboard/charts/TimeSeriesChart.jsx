@@ -3,9 +3,11 @@
 import { useEffect, useId, useState } from 'react';
 
 const WIDTH = 640;
-const HEIGHT = 220;
-const PAD = { top: 16, right: 8, bottom: 32, left: 32 };
-
+const SIZE = {
+  default: { height: 220, pad: { top: 16, right: 8, bottom: 32, left: 32 } },
+  compact: { height: 180, pad: { top: 12, right: 6, bottom: 28, left: 28 } },
+  dense: { height: 148, pad: { top: 10, right: 6, bottom: 24, left: 26 } },
+};
 function formatTickDate(iso, compact = false) {
   const d = new Date(`${iso}T12:00:00`);
   if (compact) {
@@ -24,7 +26,11 @@ export default function TimeSeriesChart({
   unitLabel = 'redemptions',
   ariaLabel = 'Trend over time',
   emptyLabel = 'No data for this period',
+  size = 'default',
 }) {
+  const sizeCfg = SIZE[size] || SIZE.default;
+  const HEIGHT = sizeCfg.height;
+  const basePad = sizeCfg.pad;
   const gradId = useId().replace(/:/g, '');
   const [hoverIndex, setHoverIndex] = useState(null);
   const [compact, setCompact] = useState(false);
@@ -37,15 +43,22 @@ export default function TimeSeriesChart({
     return () => mq.removeEventListener('change', sync);
   }, []);
 
+  const emptyHeight =
+    size === 'dense' ? 'h-[132px]' : size === 'compact' ? 'h-[168px]' : 'h-[180px] sm:h-[220px]';
+
   if (!series.length) {
     return (
-      <div className="flex h-[180px] items-center justify-center text-sm text-[var(--dash-muted)] sm:h-[220px]">
+      <div
+        className={`flex items-center justify-center text-sm text-[var(--dash-muted)] ${emptyHeight}`}
+      >
         {emptyLabel}
       </div>
     );
   }
 
-  const pad = compact ? { top: 12, right: 4, bottom: 28, left: 28 } : PAD;
+  const pad = compact
+    ? { top: basePad.top, right: 4, bottom: basePad.bottom, left: basePad.left }
+    : basePad;
   const innerW = WIDTH - pad.left - pad.right;
   const innerH = HEIGHT - pad.top - pad.bottom;
   const maxY = Math.max(...series.map((p) => Number(p[valueKey] || 0)), 1);
@@ -78,7 +91,13 @@ export default function TimeSeriesChart({
     <div className="relative w-full min-w-0 overflow-hidden">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className="h-[180px] w-full touch-pan-y sm:h-[220px]"
+        className={`w-full touch-pan-y ${
+          size === 'dense'
+            ? 'h-[132px]'
+            : size === 'compact'
+              ? 'h-[168px]'
+              : 'h-[180px] sm:h-[220px]'
+        }`}
         role="img"
         aria-label={ariaLabel}
         onMouseLeave={() => setHoverIndex(null)}

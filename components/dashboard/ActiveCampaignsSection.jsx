@@ -83,7 +83,7 @@ function CampaignRowDesktop({ row }) {
   );
 
   const className =
-    'grid grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,0.9fr))_auto] items-center gap-3 border-b border-[var(--dash-border)] px-4 py-3 last:border-b-0';
+    'grid grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,0.9fr))_auto] items-center gap-3 border-b border-[var(--dash-border)] px-4 py-2.5 last:border-b-0';
 
   if (row.href) {
     return (
@@ -108,19 +108,25 @@ export default function ActiveCampaignsSection({
   source = null,
   loading = false,
   error = null,
+  maxRows = null,
+  compact = false,
 }) {
   const hasLiveRows = Array.isArray(rows);
   const usingDemo = !hasLiveRows;
-  const data = usingDemo ? DEMO_ACTIVE_CAMPAIGNS : rows;
+  const fullData = usingDemo ? DEMO_ACTIVE_CAMPAIGNS : rows;
+  const data =
+    typeof maxRows === 'number' && maxRows > 0 ? fullData.slice(0, maxRows) : fullData;
+  const truncated =
+    typeof maxRows === 'number' && maxRows > 0 && fullData.length > maxRows;
   const dataSource = source || (usingDemo ? 'demo' : 'live');
 
   return (
-    <section aria-label="Active campaigns" className="space-y-3">
+    <section aria-label="Active campaigns" className={compact ? 'space-y-2' : 'space-y-3'}>
       <SectionHeader
-        title="Active Campaigns"
-        description="Running promotions with code volume and redemption progress"
+        title="Active campaigns"
+        description={compact ? null : 'Running promotions with code volume and redemption progress'}
         href="/dashboard/campaigns"
-        linkLabel="Manage campaigns"
+        linkLabel={truncated ? 'View all' : 'Manage campaigns'}
         badge={
           dataSource === 'demo' ? (
             <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 ring-1 ring-amber-200/80">
